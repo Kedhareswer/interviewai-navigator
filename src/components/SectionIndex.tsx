@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 
 interface Section {
@@ -64,22 +66,30 @@ const SectionIndex = () => {
             }`}
           >
             <div className="flex items-center gap-3 mb-1">
-              {activeSection === section.id && (
-                <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
-              )}
-              <span className="text-xs font-mono text-text-secondary tracking-wider">
-                {section.number}
-              </span>
+              <div className="relative h-5">
+                {/* Number (inactive state) */}
+                <span
+                  className={`absolute text-xs font-mono tracking-wider transition-all duration-300 ${
+                    activeSection === section.id
+                      ? "opacity-0 -translate-y-1 text-text-secondary"
+                      : "opacity-100 translate-y-0 text-text-secondary"
+                  }`}
+                >
+                  {section.number}
+                </span>
+
+                {/* Label (active state) */}
+                <span
+                  className={`absolute text-sm tracking-tight transition-all duration-300 ${
+                    activeSection === section.id
+                      ? "opacity-100 translate-y-0 font-semibold text-primary"
+                      : "opacity-0 translate-y-1 font-normal text-text-secondary"
+                  }`}
+                >
+                  {section.label}
+                </span>
+              </div>
             </div>
-            <span
-              className={`text-sm tracking-tight transition-all ${
-                activeSection === section.id
-                  ? "font-semibold text-foreground"
-                  : "font-normal text-text-secondary"
-              }`}
-            >
-              {section.label}
-            </span>
             {activeSection === section.id && (
               <div className="mt-1 h-0.5 bg-primary w-full transition-all" />
             )}

@@ -29,8 +29,8 @@ const RagVoiceSection = () => {
               <span className="w-1 h-1 rounded-full bg-pill-foreground/40" />
               <span>RAG & Voice</span>
             </div>
-            <h2 className="text-h2 font-bold tracking-tight">
-              Voice-native, RAG-powered interviews.
+            <h2 className="text-h2 font-serif tracking-tight">
+              <span className="italic">Voice-native</span>, RAG-powered interviews.
             </h2>
             <div className="space-y-3 text-base text-text-secondary leading-relaxed">
               <p className="flex items-start gap-3">

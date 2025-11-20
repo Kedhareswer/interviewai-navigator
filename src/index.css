@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Besley:ital,wght@0,400;1,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,6 +14,7 @@ All colors MUST be HSL.
     --page-bg: 220 14% 96%;           /* #F5F5F7 light canvas */
     --background: 0 0% 100%;          /* white */
     --bg-elevated: 222 47% 6%;        /* #10121A dark elevated */
+    --agents-bg: 30 10% 8%;           /* deep warm charcoal for Agents section */
     
     /* Text */
     --foreground: 220 26% 9%;         /* #111827 deep slate */
@@ -135,10 +138,10 @@ All colors MUST be HSL.
     scroll-behavior: smooth;
   }
 
-  @font-face {
-    font-family: 'Inter';
-    font-display: swap;
-    src: url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  h1,
+  h2,
+  h3 {
+    @apply font-serif;
   }
 }
 
@@ -179,5 +182,46 @@ All colors MUST be HSL.
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  /* Agents section theming */
+  .agents-section {
+    background-color: hsl(var(--agents-bg));
+  }
+
+  .agents-gallery {
+    position: relative;
+  }
+
+  .agents-fade-left,
+  .agents-fade-right {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 48px;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .agents-fade-left {
+    left: 0;
+    background: linear-gradient(to right, hsl(var(--agents-bg)) 0%, hsla(var(--agents-bg) / 0) 100%);
+  }
+
+  .agents-fade-right {
+    right: 0;
+    background: linear-gradient(to left, hsl(var(--agents-bg)) 0%, hsla(var(--agents-bg) / 0) 100%);
+  }
+
+  /* Scroll-linked horizontal slide for agent cards */
+  .agent-card {
+    opacity: 0;
+    transform: translateX(80px);
+    transition: transform 0.6s ease-out, opacity 0.6s ease-out;
+  }
+
+  .agent-card-inview {
+    opacity: 1;
+    transform: translateX(0);
   }
 }

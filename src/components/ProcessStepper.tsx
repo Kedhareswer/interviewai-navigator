@@ -57,8 +57,8 @@ const ProcessStepper = () => {
               <span className="w-1 h-1 rounded-full bg-pill-foreground/40" />
               <span>How it works</span>
             </div>
-            <h2 className="text-h2 font-bold tracking-tight">
-              A structured pipeline from job spec to voice interview.
+            <h2 className="text-h2 font-serif tracking-tight">
+              A <span className="italic">structured pipeline</span> from job spec to voice interview.
             </h2>
             <p className="text-base text-text-secondary leading-relaxed">
               Six specialized stages ensure comprehensive evaluation while maintaining consistency and fairness across all candidates.

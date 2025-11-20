@@ -1,3 +1,6 @@
+"use client";
+
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Mail } from "lucide-react";
 
@@ -11,19 +14,24 @@ const GetStartedSection = () => {
           <span>Get started</span>
         </div>
 
-        <h2 className="text-h2 font-bold tracking-tight">
-          Interested in using InterviewOS for your hiring?
+        <h2 className="text-h2 font-serif tracking-tight">
+          Ready to use <span className="italic">InterviewOS</span> for your hiring?
         </h2>
 
         <p className="text-lg text-text-secondary max-w-2xl mx-auto leading-relaxed">
-          We're working with select teams to refine the platform. Book a walkthrough 
-          to see the full interview pipeline in action.
+          Start managing jobs, candidates, and conducting AI-powered interviews right away. 
+          Access the dashboard to create your first interview.
         </p>
 
         <div className="flex items-center justify-center gap-4 pt-4">
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105 px-6 py-6 text-base group">
-            Book a walkthrough
-            <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          <Button
+            asChild
+            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105 px-6 py-6 text-base group"
+          >
+            <Link href="/dashboard">
+              Go to Dashboard
+              <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
           </Button>
           <Button
             variant="outline"
