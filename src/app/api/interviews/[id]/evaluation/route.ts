@@ -3,16 +3,17 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
 
     // Get evaluation if it exists
     const { data: evaluation, error: evalError } = await supabase
       .from('evaluations')
       .select('*')
-      .eq('interview_id', params.id)
+      .eq('interview_id', id)
       .single();
 
     if (evalError && evalError.code !== 'PGRST116') {
@@ -25,7 +26,7 @@ export async function GET(
       const { data: interview } = await supabase
         .from('interviews')
         .select('status')
-        .eq('id', params.id)
+        .eq('id', id)
         .single();
 
       if (interview?.status !== 'completed') {

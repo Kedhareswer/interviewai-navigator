@@ -4,8 +4,9 @@ import { createClient } from '@/lib/supabase/server';
 // Server-Sent Events endpoint for streaming interview events
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
@@ -18,14 +19,14 @@ export async function GET(
 
       // Set up real-time subscription to interview events
       const channel = supabase
-        .channel(`interview:${params.id}`)
+        .channel(`interview:${id}`)
         .on(
           'postgres_changes',
           {
             event: 'INSERT',
             schema: 'public',
             table: 'interview_events',
-            filter: `interview_id=eq.${params.id}`,
+            filter: `interview_id=eq.${id}`,
           },
           (payload) => {
             controller.enqueue(

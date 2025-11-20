@@ -4,9 +4,10 @@ import { interviewOrchestrator } from '@/lib/agents/orchestrator';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const body = await request.json();
 
@@ -14,7 +15,7 @@ export async function POST(
     const { data: event, error: eventError } = await supabase
       .from('interview_events')
       .insert({
-        interview_id: params.id,
+        interview_id: id,
         type: 'answer',
         payload: {
           answer: body.answer,
@@ -31,7 +32,7 @@ export async function POST(
     // 1. Send answer to the expert agent for scoring
     // 2. Update planner state
     // 3. Generate next question or finalize
-    await interviewOrchestrator.processAnswer(params.id, body.answer);
+    await interviewOrchestrator.processAnswer(id, body.answer);
 
     // For now, just return the event
     return NextResponse.json({

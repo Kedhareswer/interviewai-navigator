@@ -3,11 +3,12 @@ import { candidateIngestionService } from '@/lib/ingestion/candidate-ingestion';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Trigger candidate ingestion
-    await candidateIngestionService.ingestCandidate(params.id);
+    await candidateIngestionService.ingestCandidate(id);
 
     return NextResponse.json({
       data: { message: 'Candidate ingestion started' },

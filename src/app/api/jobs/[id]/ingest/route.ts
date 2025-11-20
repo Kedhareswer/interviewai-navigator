@@ -3,11 +3,12 @@ import { jobIngestionService } from '@/lib/ingestion/job-ingestion';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Trigger job ingestion
-    const normalized = await jobIngestionService.ingestJob(params.id);
+    const normalized = await jobIngestionService.ingestJob(id);
 
     return NextResponse.json({
       data: { normalized, message: 'Job ingestion completed' },

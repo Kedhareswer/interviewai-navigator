@@ -4,9 +4,10 @@ import { interviewOrchestrator } from '@/lib/agents/orchestrator';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
 
     // Update interview status
@@ -16,7 +17,7 @@ export async function POST(
         status: 'in_progress',
         started_at: new Date().toISOString(),
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select(`
         *,
         jobs (*),
