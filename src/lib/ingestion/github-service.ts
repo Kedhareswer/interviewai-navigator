@@ -73,9 +73,9 @@ export class GitHubService {
   extractUsername(url: string): string {
     // Handle various GitHub URL formats
     const patterns = [
-      /github\.com\/([^\/]+)\/?$/,
-      /github\.com\/([^\/]+)\/repositories/,
-      /@([^\/]+)/,
+      /github\.com\/([^/]+)\/?$/,
+      /github\.com\/([^/]+)\/repositories/,
+      /@([^/]+)/,
     ];
 
     for (const pattern of patterns) {

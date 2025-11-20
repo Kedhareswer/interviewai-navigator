@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +19,13 @@ export default function InterviewPage() {
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
   const [evaluation, setEvaluation] = useState<any>(null);
 
+  const loadEvaluation = useCallback(async () => {
+    const evalData = await getEvaluation();
+    if (evalData?.data) {
+      setEvaluation(evalData.data);
+    }
+  }, [getEvaluation]);
+
   useEffect(() => {
     // Get latest question
     const questionEvent = events
@@ -33,14 +40,7 @@ export default function InterviewPage() {
     if (events.some(e => e.type === 'system' && e.payload?.message === 'Interview completed')) {
       loadEvaluation();
     }
-  }, [events]);
-
-  const loadEvaluation = async () => {
-    const evalData = await getEvaluation();
-    if (evalData?.data) {
-      setEvaluation(evalData.data);
-    }
-  };
+  }, [events, loadEvaluation]);
 
   const handleStart = async () => {
     try {
