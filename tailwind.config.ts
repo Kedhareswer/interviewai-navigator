@@ -14,11 +14,17 @@ export default {
     },
     extend: {
       colors: {
+        page: "hsl(var(--page-bg))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        "text-secondary": "hsl(var(--text-secondary))",
+        "text-inverted": "hsl(var(--text-inverted))",
+        "border-subtle": "hsl(var(--border-subtle))",
+        "border-strong": "hsl(var(--border-strong))",
+        "bg-elevated": "hsl(var(--bg-elevated))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -47,6 +53,10 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        pill: {
+          DEFAULT: "hsl(var(--pill-bg))",
+          foreground: "hsl(var(--pill-text))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -57,6 +67,18 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        mono: ['JetBrains Mono', 'SF Mono', 'ui-monospace', 'Menlo', 'monospace'],
+      },
+      fontSize: {
+        'display': ['3.5rem', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
+        'h2': ['2rem', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
+        'h3': ['1.375rem', { lineHeight: '1.3' }],
+      },
+      backdropBlur: {
+        'nav': '12px',
       },
       borderRadius: {
         lg: "var(--radius)",
