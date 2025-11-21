@@ -14,6 +14,7 @@ dist-ssr
 .env.local
 .env*.local
 .next
+.env
 .vercel
 
 # Editor directories and files
