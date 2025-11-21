@@ -110,7 +110,7 @@ export class InterviewOrchestrator {
       
       // Respect HR's agent selection if provided
       const selectedAgents = fullInterview?.selected_agents as string[] | null;
-      const preferredAgents = fullInterview?.jobs?.preferred_agents as string[] | null;
+      const preferredAgents = (fullInterview?.jobs as any)?.[0]?.preferred_agents as string[] | null;
       
       if (selectedAgents && selectedAgents.length > 0) {
         const matchingAgent = selectedAgents.find((agentId) => {
@@ -194,6 +194,7 @@ export class InterviewOrchestrator {
       .select(`
         job_id,
         candidate_id,
+        selected_agents,
         jobs (*)
       `)
       .eq('id', interviewId)
@@ -202,6 +203,10 @@ export class InterviewOrchestrator {
     if (!interview) {
       throw new Error(`Interview not found: ${interviewId}`);
     }
+
+    // Extract job data (available for both HR and expert agents)
+    const job = (interview.jobs as any)?.[0];
+    const normalized = job?.normalized_json as any;
 
     // Decide next action
     const decision = await plannerAgent.decideNextAction(
@@ -227,12 +232,9 @@ export class InterviewOrchestrator {
         state.candidateAnalysis
       );
     } else {
-      // Get the appropriate expert agent based on domain
-      const normalized = interview.jobs?.normalized_json as any;
-      
       // Check if HR selected specific agents for this interview
       const selectedAgents = interview.selected_agents as string[] | null;
-      const preferredAgents = interview.jobs?.preferred_agents as string[] | null;
+      const preferredAgents = job?.preferred_agents as string[] | null;
       
       // Determine which agent to use
       let agentDomain = decision.domain || state.jobDomain;
@@ -273,7 +275,7 @@ export class InterviewOrchestrator {
         decision.competency!,
         state.difficulty,
         interview.candidate_id,
-        interview.jobs
+        job
       );
     }
 
@@ -283,7 +285,7 @@ export class InterviewOrchestrator {
       agentType: decision.agentType,
       domain: decision.domain,
       reasoning: decision.reasoning,
-      techStack: interview.jobs?.normalized_json?.techStack,
+      techStack: normalized?.techStack,
     });
 
     // Update state
