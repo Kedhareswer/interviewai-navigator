@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getSessionWithProfile } from '@/lib/auth/session';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const { supabase, session } = await getSessionWithProfile();
+
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized', data: null }, { status: 401 });
+    }
+
     const { data, error } = await supabase
       .from('jobs')
       .select('*')
@@ -22,7 +27,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const { supabase, session, profile } = await getSessionWithProfile();
+
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized', data: null }, { status: 401 });
+    }
+
+    if (profile?.role !== 'hr') {
+      return NextResponse.json({ error: 'Forbidden', data: null }, { status: 403 });
+    }
+
     const body = await request.json();
 
     const { data, error } = await supabase
@@ -31,15 +45,12 @@ export async function POST(request: NextRequest) {
         title: body.title,
         level: body.level,
         description_raw: body.description_raw,
+        created_by: session.user.id,
       })
       .select()
       .single();
 
     if (error) throw error;
-
-    // Trigger job ingestion (async - will be handled by ingestion service)
-    // For now, we'll just return the job
-    // TODO: Queue job ingestion task
 
     return NextResponse.json({ data, error: null }, { status: 201 });
   } catch (error: any) {

@@ -46,19 +46,25 @@ const GetStartedSection = () => {
         <div className="pt-16 space-y-6">
           <div className="flex items-center justify-center gap-6 text-sm text-text-secondary">
             <a href="#" className="hover:text-foreground transition-colors">
-              Terms
-            </a>
-            <span className="w-1 h-1 rounded-full bg-border-strong" />
-            <a href="#" className="hover:text-foreground transition-colors">
               Privacy
             </a>
             <span className="w-1 h-1 rounded-full bg-border-strong" />
-            <a href="#" className="hover:text-foreground transition-colors">
+            <a
+              href="https://www.linkedin.com/in/kedhareswernaidu"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
               LinkedIn
             </a>
             <span className="w-1 h-1 rounded-full bg-border-strong" />
-            <a href="#" className="hover:text-foreground transition-colors">
-              X
+            <a
+              href="https://github.com/Kedhareswer"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
+              GitHub
             </a>
           </div>
           <p className="text-xs text-text-secondary">

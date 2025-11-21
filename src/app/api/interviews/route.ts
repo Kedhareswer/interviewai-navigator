@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getSessionWithProfile } from '@/lib/auth/session';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const { supabase, session, profile } = await getSessionWithProfile();
+
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized', data: null }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const jobId = searchParams.get('job_id');
@@ -28,6 +33,21 @@ export async function GET(request: NextRequest) {
       query = query.eq('candidate_id', candidateId);
     }
 
+    if (profile?.role === 'candidate') {
+      const { data: candidateRecord } = await supabase
+        .from('candidates')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (!candidateRecord) {
+        return NextResponse.json({ data: [], error: null });
+      }
+
+      query = query.eq('candidate_id', candidateRecord.id);
+    }
+
     const { data, error } = await query;
 
     if (error) throw error;
@@ -43,7 +63,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const { supabase, session, profile } = await getSessionWithProfile();
+
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized', data: null }, { status: 401 });
+    }
+
+    if (profile?.role !== 'hr') {
+      return NextResponse.json({ error: 'Forbidden', data: null }, { status: 403 });
+    }
+
     const body = await request.json();
 
     const { data, error } = await supabase
@@ -53,6 +82,7 @@ export async function POST(request: NextRequest) {
         candidate_id: body.candidate_id,
         mode: body.mode || 'chat',
         status: 'scheduled',
+        scheduled_by: session.user.id,
       })
       .select(`
         *,

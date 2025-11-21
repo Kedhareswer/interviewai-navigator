@@ -55,46 +55,36 @@ const SectionIndex = () => {
   };
 
   return (
-    <aside className="hidden lg:block fixed left-6 top-32 w-32 z-40">
-      <div className="space-y-6">
-        {sections.map((section) => (
-          <button
-            key={section.id}
-            onClick={() => scrollToSection(section.id)}
-            className={`flex flex-col items-start text-left transition-all duration-300 group ${
-              activeSection === section.id ? "opacity-100" : "opacity-40 hover:opacity-70"
-            }`}
-          >
-            <div className="flex items-center gap-3 mb-1">
-              <div className="relative h-5">
-                {/* Number (inactive state) */}
-                <span
-                  className={`absolute text-xs font-mono tracking-wider transition-all duration-300 ${
-                    activeSection === section.id
-                      ? "opacity-0 -translate-y-1 text-text-secondary"
-                      : "opacity-100 translate-y-0 text-text-secondary"
-                  }`}
-                >
-                  {section.number}
-                </span>
-
-                {/* Label (active state) */}
-                <span
-                  className={`absolute text-sm tracking-tight transition-all duration-300 ${
-                    activeSection === section.id
-                      ? "opacity-100 translate-y-0 font-semibold text-primary"
-                      : "opacity-0 translate-y-1 font-normal text-text-secondary"
-                  }`}
-                >
-                  {section.label}
-                </span>
-              </div>
-            </div>
-            {activeSection === section.id && (
-              <div className="mt-1 h-0.5 bg-primary w-full transition-all" />
-            )}
-          </button>
-        ))}
+    <aside className="hidden lg:block fixed left-6 top-32 w-40 z-40">
+      <div className="space-y-4">
+        {sections.map((section) => {
+          const isActive = activeSection === section.id;
+          return (
+            <button
+              key={section.id}
+              onClick={() => scrollToSection(section.id)}
+              className={`w-full text-left flex flex-col gap-1 transition-all duration-300 ${
+                isActive ? "opacity-100" : "opacity-50 hover:opacity-80"
+              }`}
+            >
+              <span className="text-[11px] font-mono tracking-widest text-text-secondary uppercase">
+                {section.number.padStart(2, "0")}
+              </span>
+              <span
+                className={`text-sm truncate ${
+                  isActive ? "text-primary font-semibold" : "text-text-secondary font-medium"
+                }`}
+              >
+                {section.label}
+              </span>
+              <div
+                className={`h-0.5 transition-all duration-300 ${
+                  isActive ? "bg-primary w-full" : "bg-border/60 w-1/2"
+                }`}
+              />
+            </button>
+          );
+        })}
       </div>
     </aside>
   );
