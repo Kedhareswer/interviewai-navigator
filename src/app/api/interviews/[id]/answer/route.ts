@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getSessionWithProfile } from '@/lib/auth/session';
 import { interviewOrchestrator } from '@/lib/agents/orchestrator';
 
 export async function POST(
@@ -8,7 +9,35 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
+    const { session, profile } = await getSessionWithProfile();
+
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized', data: null }, { status: 401 });
+    }
+
+    // Verify the user has access to this interview
     const supabase = await createClient();
+    const { data: interview } = await supabase
+      .from('interviews')
+      .select('candidate_id, candidates!inner(user_id)')
+      .eq('id', id)
+      .single();
+
+    if (!interview) {
+      return NextResponse.json({ error: 'Interview not found', data: null }, { status: 404 });
+    }
+
+    // Only candidates can answer (HR can view but not answer)
+    if (profile?.role !== 'candidate') {
+      return NextResponse.json({ error: 'Forbidden', data: null }, { status: 403 });
+    }
+
+    // Verify candidate owns this interview
+    const candidateUserId = (interview.candidates as any)?.user_id;
+    if (candidateUserId !== session.user.id) {
+      return NextResponse.json({ error: 'Forbidden', data: null }, { status: 403 });
+    }
+
     const body = await request.json();
 
     // Record the answer as an event

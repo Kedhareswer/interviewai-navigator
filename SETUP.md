@@ -20,7 +20,9 @@ npm install
      - `supabase/migrations/001_initial_schema.sql` - Creates all tables, indexes, and triggers
      - `supabase/migrations/002_vector_search_function.sql` - Creates vector similarity search function
      - `supabase/migrations/003_fix_security_and_performance.sql` - Security fixes and performance indexes
-     - `supabase/migrations/004_fix_rls_policies.sql` - Comprehensive RLS policies
+     - `supabase/migrations/004_public_access.sql` - Public access policies
+     - `supabase/migrations/005_auth_roles.sql` - Auth and role management
+     - `supabase/migrations/006_interview_metadata.sql` - Interview configuration fields
 
 4. **Set up Storage Buckets:**
    - Go to Storage in Supabase dashboard
@@ -73,6 +75,16 @@ npm run dev
 ```
 
 Visit http://localhost:3000
+
+## Documentation
+
+For comprehensive documentation, see the [`docs/`](./docs/) folder:
+
+- **[Architecture](./docs/architecture.md)** - System architecture and components
+- **[Agent System](./docs/agents.md)** - Multi-agent orchestration details
+- **[API Documentation](./docs/api.md)** - Complete API reference
+- **[Database Schema](./docs/database.md)** - Database structure
+- **[Deployment Guide](./docs/deployment.md)** - Production deployment
 
 ## Project Structure
 
@@ -129,8 +141,20 @@ supabase/
 │   ├── 001_initial_schema.sql
 │   ├── 002_vector_search_function.sql
 │   ├── 003_fix_security_and_performance.sql
-│   └── 004_fix_rls_policies.sql
+│   ├── 004_public_access.sql
+│   ├── 005_auth_roles.sql
+│   └── 006_interview_metadata.sql
 └── storage-setup.sql        # Storage bucket setup
+
+docs/                        # Comprehensive documentation
+├── README.md               # Documentation index
+├── architecture.md         # System architecture
+├── agents.md              # Agent system (DeepAgents)
+├── candidate-flow.md      # Candidate user journey
+├── hr-flow.md             # HR user journey
+├── api.md                 # API documentation
+├── database.md            # Database schema
+└── deployment.md          # Deployment guide
 ```
 
 ## Features Implemented
@@ -289,6 +313,9 @@ All tables have Row Level Security (RLS) enabled with comprehensive policies:
 
 ## Deployment to Vercel
 
+For detailed deployment instructions, see the [Deployment Guide](./docs/deployment.md).
+
+Quick steps:
 1. **Push code to GitHub**
 2. **Import project in Vercel**
 3. **Add environment variables** in Vercel dashboard:

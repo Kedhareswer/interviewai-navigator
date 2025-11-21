@@ -3,7 +3,8 @@ import { createAdminClient } from '../supabase/admin';
 
 export interface Evaluation {
   scores: Record<string, number>; // competency -> score
-  summary: string;
+  summary: string; // Full evaluation summary (HR-only)
+  candidateSummary?: string; // Sanitized summary for candidate view
   recommendation: 'strong_yes' | 'yes' | 'no' | 'strong_no';
 }
 
@@ -87,9 +88,16 @@ Answers provided: ${answers.length}
 Return JSON:
 {
   "scores": { "competency": score, ... },
-  "summary": "comprehensive evaluation summary",
+  "summary": "comprehensive evaluation summary for HR (include specific scores, strengths, weaknesses, detailed analysis)",
+  "candidateSummary": "brief, encouraging summary for candidate (highlight strengths, areas for growth, overall feedback - NO specific scores or negative details)",
   "recommendation": "strong_yes" | "yes" | "no" | "strong_no"
-}`,
+}
+
+The candidateSummary should be:
+- Positive and constructive
+- Focus on strengths and growth areas
+- No specific numeric scores
+- Professional and encouraging`,
       },
     ];
 

@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 
 interface CandidateRecord {
   id: string;
@@ -305,21 +307,37 @@ export default function CandidateDashboardPage() {
                 {interviews.map((interview) => (
                   <div
                     key={interview.id}
-                    className="border rounded-lg p-4 flex flex-col gap-1"
+                    className="border rounded-lg p-4 flex flex-col gap-3"
                   >
-                    <p className="font-medium">
-                      {interview.jobs?.title ?? "Interview"} ·{" "}
-                      <span className="text-sm text-text-secondary">
-                        {interview.mode.toUpperCase()}
-                      </span>
-                    </p>
-                    <p className="text-sm text-text-secondary">
-                      Status: {interview.status}
-                    </p>
-                    <p className="text-xs text-text-secondary">
-                      Scheduled on{" "}
-                      {new Date(interview.created_at).toLocaleString()}
-                    </p>
+                    <div>
+                      <p className="font-medium">
+                        {interview.jobs?.title ?? "Interview"} ·{" "}
+                        <span className="text-sm text-text-secondary">
+                          {interview.mode.toUpperCase()}
+                        </span>
+                      </p>
+                      <p className="text-sm text-text-secondary">
+                        Status: <Badge variant="outline">{interview.status}</Badge>
+                      </p>
+                      <p className="text-xs text-text-secondary">
+                        Scheduled on{" "}
+                        {new Date(interview.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    {(interview.status === "scheduled" || interview.status === "in_progress") && (
+                      <Link href={`/dashboard/candidate/interviews/${interview.id}`}>
+                        <Button className="w-full">
+                          {interview.status === "scheduled" ? "Attend Interview" : "Continue Interview"}
+                        </Button>
+                      </Link>
+                    )}
+                    {interview.status === "completed" && (
+                      <Link href={`/dashboard/candidate/interviews/${interview.id}`}>
+                        <Button variant="outline" className="w-full">
+                          View Results
+                        </Button>
+                      </Link>
+                    )}
                   </div>
                 ))}
               </div>

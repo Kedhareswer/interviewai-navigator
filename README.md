@@ -215,9 +215,22 @@ See `env.example` for all required and optional environment variables.
 
 ## 📚 Documentation
 
+Comprehensive documentation is available in the [`docs/`](./docs/) folder:
+
+- **[Documentation Index](./docs/README.md)** - Overview and navigation
+- **[Architecture](./docs/architecture.md)** - System architecture and design
+- **[Agent System](./docs/agents.md)** - Multi-agent orchestration (DeepAgents)
+- **[Candidate Flow](./docs/candidate-flow.md)** - Candidate user journey
+- **[HR Flow](./docs/hr-flow.md)** - HR user journey and management
+- **[API Documentation](./docs/api.md)** - REST API endpoints
+- **[Database Schema](./docs/database.md)** - Database structure and relationships
+- **[Deployment Guide](./docs/deployment.md)** - Production deployment instructions
+
+**Quick Start Guides:**
 - [SETUP.md](./SETUP.md) - Detailed setup guide
 - [supabase/migrations/](./supabase/migrations/) - Database migrations
-- Code is well-documented with TypeScript types
+
+Code is well-documented with TypeScript types.
 
 ## 🛠️ Development
 

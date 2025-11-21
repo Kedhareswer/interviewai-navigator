@@ -83,6 +83,8 @@ export async function POST(request: NextRequest) {
         mode: body.mode || 'chat',
         status: 'scheduled',
         scheduled_by: session.user.id,
+        difficulty_override: body.difficulty_override || null,
+        selected_agents: body.selected_agents || null,
       })
       .select(`
         *,

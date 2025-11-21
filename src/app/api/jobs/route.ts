@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
         level: body.level,
         description_raw: body.description_raw,
         created_by: session.user.id,
+        preferred_agents: body.preferred_agents || null,
       })
       .select()
       .single();

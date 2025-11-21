@@ -52,4 +52,27 @@ export async function PATCH(
   }
 }
 
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from('candidates')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    return NextResponse.json({ data: { success: true }, error: null });
+  } catch (error: any) {
+    return NextResponse.json(
+      { data: null, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
 

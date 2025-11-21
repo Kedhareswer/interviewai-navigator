@@ -1,6 +1,6 @@
 import { BaseAgent, AgentMessage } from './base-agent';
-import { vectorStore } from '../rag/vector-store';
 import { createAdminClient } from '../supabase/admin';
+import { candidateUnderstandingAgent, CandidateAnalysis } from './candidate-understanding-agent';
 
 export interface PlannerState {
   competencies: Array<{
@@ -13,6 +13,8 @@ export interface PlannerState {
   questionCount: number;
   maxQuestions: number;
   difficulty: 'junior' | 'mid' | 'senior' | 'staff';
+  candidateAnalysis?: CandidateAnalysis;
+  jobDomain?: string;
 }
 
 export class PlannerAgent extends BaseAgent {
@@ -32,7 +34,11 @@ You must be strategic and efficient, covering all required competencies while no
   /**
    * Initialize planner state from job and candidate
    */
-  async initialize(jobId: string, candidateId: string): Promise<PlannerState> {
+  async initialize(
+    jobId: string,
+    candidateId: string,
+    difficultyOverride?: string | null
+  ): Promise<PlannerState> {
     // Get job normalized data
     const { data: job } = await this.supabase
       .from('jobs')
@@ -48,15 +54,14 @@ You must be strategic and efficient, covering all required competencies while no
       questionsAsked: 0,
     }));
 
-    // Get candidate context summary
-    const candidateContext = await vectorStore.retrieveCandidateContext(
+    // Use CandidateUnderstandingAgent to analyze candidate
+    const candidateAnalysis = await candidateUnderstandingAgent.analyzeCandidate(
       candidateId,
-      'What are this candidate\'s main strengths and experience?',
-      5
+      jobId
     );
 
-    // Determine starting difficulty based on candidate context
-    const difficulty = await this.determineDifficulty(candidateContext, normalized?.level || 'mid');
+    // Use override if provided, otherwise use candidate analysis recommendation
+    const difficulty = (difficultyOverride as any) || candidateAnalysis.recommendedDifficulty;
 
     return {
       competencies,
@@ -64,11 +69,13 @@ You must be strategic and efficient, covering all required competencies while no
       questionCount: 0,
       maxQuestions: 15, // Configurable
       difficulty,
+      candidateAnalysis,
+      jobDomain: normalized?.domain,
     };
   }
 
   /**
-   * Decide next action (which competency, which agent)
+   * Decide next action (which competency, which agent, which domain)
    */
   async decideNextAction(
     state: PlannerState,
@@ -78,21 +85,44 @@ You must be strategic and efficient, covering all required competencies while no
     action: 'question' | 'complete';
     competency?: string;
     agentType?: 'domain' | 'hr';
+    domain?: string; // For routing to specialized expert agents
     reasoning?: string;
   }> {
+    // Get job context for domain info
+    const { data: job } = await this.supabase
+      .from('jobs')
+      .select('normalized_json')
+      .eq('id', jobId)
+      .single();
+
+    const normalized = job?.normalized_json as any;
+
     const messages: AgentMessage[] = [
       {
         role: 'user',
         content: `Current interview state:
 ${JSON.stringify(state, null, 2)}
 
+Job domain: ${normalized?.domain || 'unknown'}
+Job tech stack: ${JSON.stringify(normalized?.techStack || [])}
+
+Candidate analysis:
+${JSON.stringify(state.candidateAnalysis || {}, null, 2)}
+
 Decide the next action. Return JSON:
 {
   "action": "question" | "complete",
   "competency": "competency name if action is question",
   "agentType": "domain" | "hr" if action is question,
+  "domain": "backend|ml|frontend|other" if agentType is domain (for routing to specialized expert),
   "reasoning": "why this decision"
-}`,
+}
+
+Consider:
+- Which competencies still need coverage
+- Whether to probe deeper on weak areas or move on
+- When to mix in HR/behavioral questions
+- Candidate's strengths and risks from analysis`,
       },
     ];
 
@@ -100,6 +130,7 @@ Decide the next action. Return JSON:
       action: 'question' | 'complete';
       competency?: string;
       agentType?: 'domain' | 'hr';
+      domain?: string;
       reasoning?: string;
     }>(messages);
 
@@ -134,22 +165,6 @@ Decide the next action. Return JSON:
     };
   }
 
-  private async determineDifficulty(
-    candidateContext: any[],
-    jobLevel: string
-  ): Promise<'junior' | 'mid' | 'senior' | 'staff'> {
-    // Simple heuristic - can be improved with LLM
-    const contextText = candidateContext.map((c) => c.text).join('\n');
-    
-    if (contextText.toLowerCase().includes('senior') || contextText.toLowerCase().includes('lead')) {
-      return 'senior';
-    }
-    if (contextText.toLowerCase().includes('junior') || contextText.toLowerCase().includes('entry')) {
-      return 'junior';
-    }
-    
-    return jobLevel as any || 'mid';
-  }
 }
 
 export const plannerAgent = new PlannerAgent();

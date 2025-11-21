@@ -73,7 +73,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <Card>
             <CardHeader>
               <CardTitle>Jobs</CardTitle>
@@ -134,6 +134,21 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Profile Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile Settings</CardTitle>
+            <CardDescription>Manage your profile and company information</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard/profile">
+              <Button variant="outline" className="w-full">
+                Edit Profile
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

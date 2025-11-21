@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,9 +17,12 @@ const AVAILABLE_AGENTS = [
   { id: 'hr', name: 'HR Behavioral', description: 'Behavioral questions, communication, teamwork' },
 ];
 
-export default function NewJobPage() {
+export default function JobDetailPage() {
+  const params = useParams();
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const jobId = params.id as string;
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     level: 'mid',
@@ -27,13 +30,36 @@ export default function NewJobPage() {
     selectedAgents: [] as string[],
   });
 
+  useEffect(() => {
+    fetchJob();
+  }, [jobId]);
+
+  const fetchJob = async () => {
+    try {
+      const response = await fetch(`/api/jobs/${jobId}`);
+      const data = await response.json();
+      if (data.data) {
+        setFormData({
+          title: data.data.title || '',
+          level: data.data.level || 'mid',
+          description_raw: data.data.description_raw || '',
+          selectedAgents: data.data.preferred_agents || [],
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch job:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
 
     try {
-      const response = await fetch('/api/jobs', {
-        method: 'POST',
+      const response = await fetch(`/api/jobs/${jobId}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: formData.title,
@@ -43,29 +69,41 @@ export default function NewJobPage() {
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to create job');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update job');
+      }
 
-      const data = await response.json();
-      
-      // Trigger ingestion
-      await fetch(`/api/jobs/${data.data.id}/ingest`, { method: 'POST' });
-      
-      router.push(`/dashboard/jobs/${data.data.id}`);
-    } catch (error) {
-      console.error('Failed to create job:', error);
-      alert('Failed to create job');
+      alert('Job updated successfully');
+      router.push('/dashboard/jobs');
+    } catch (error: any) {
+      console.error('Failed to update job:', error);
+      alert(error.message || 'Failed to update job');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
+
+  const handleAgentToggle = (agentId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      selectedAgents: prev.selectedAgents.includes(agentId)
+        ? prev.selectedAgents.filter((id) => id !== agentId)
+        : [...prev.selectedAgents, agentId],
+    }));
+  };
+
+  if (loading) {
+    return <div className="p-6">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-page p-6">
       <div className="max-w-3xl mx-auto">
         <Card>
           <CardHeader>
-            <CardTitle>Create New Job</CardTitle>
-            <CardDescription>Add a new job posting</CardDescription>
+            <CardTitle>Edit Job</CardTitle>
+            <CardDescription>Update job posting information</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -105,14 +143,13 @@ export default function NewJobPage() {
                   onChange={(e) => setFormData({ ...formData, description_raw: e.target.value })}
                   rows={10}
                   required
-                  placeholder="Paste the full job description here..."
                 />
               </div>
 
               <div className="space-y-3">
                 <Label>Preferred Expert Agents (Optional)</Label>
                 <p className="text-xs text-text-secondary mb-3">
-                  Select which expert agents should be used for interviews for this job. If none selected, system will auto-select based on job domain.
+                  Select which expert agents should be used for interviews for this job.
                 </p>
                 <div className="space-y-3 border rounded-lg p-4">
                   {AVAILABLE_AGENTS.map((agent) => (
@@ -120,14 +157,7 @@ export default function NewJobPage() {
                       <Checkbox
                         id={agent.id}
                         checked={formData.selectedAgents.includes(agent.id)}
-                        onCheckedChange={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            selectedAgents: prev.selectedAgents.includes(agent.id)
-                              ? prev.selectedAgents.filter((id) => id !== agent.id)
-                              : [...prev.selectedAgents, agent.id],
-                          }));
-                        }}
+                        onCheckedChange={() => handleAgentToggle(agent.id)}
                       />
                       <div className="flex-1">
                         <Label
@@ -144,8 +174,8 @@ export default function NewJobPage() {
               </div>
 
               <div className="flex gap-4">
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Creating...' : 'Create Job'}
+                <Button type="submit" disabled={saving}>
+                  {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
                 <Button
                   type="button"

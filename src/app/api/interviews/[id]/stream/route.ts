@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getSessionWithProfile } from '@/lib/auth/session';
 
 // Server-Sent Events endpoint for streaming interview events
 export async function GET(
@@ -7,6 +8,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const { session } = await getSessionWithProfile();
+
+  if (!session) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {

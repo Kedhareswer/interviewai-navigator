@@ -1,6 +1,6 @@
 import { createAdminClient } from '../supabase/admin';
 import { plannerAgent, PlannerState } from './planner-agent';
-import { expertDomainAgent, Question, AnswerEvaluation } from './expert-agent';
+import { ExpertAgentFactory, Question, AnswerEvaluation } from './expert-agent-factory';
 import { hrBehavioralAgent, HRQuestion, HRAnswerEvaluation } from './hr-agent';
 import { evaluationAgent } from './evaluation-agent';
 import { storageService } from '../storage';
@@ -28,17 +28,24 @@ export class InterviewOrchestrator {
       throw new Error(`Interview not found: ${interviewId}`);
     }
 
-    // Initialize planner state
+    // Initialize planner state with difficulty override if provided
     const state = await plannerAgent.initialize(
       interview.job_id,
-      interview.candidate_id
+      interview.candidate_id,
+      interview.difficulty_override
     );
     this.stateMap.set(interviewId, state);
 
-    // Record system event
+    // Record system event with candidate analysis
     await this.recordEvent(interviewId, 'system', {
       message: 'Interview started',
-      state: state,
+      state: {
+        competencies: state.competencies,
+        difficulty: state.difficulty,
+        maxQuestions: state.maxQuestions,
+      },
+      candidateAnalysis: state.candidateAnalysis,
+      jobDomain: state.jobDomain,
     });
 
     // Generate first question
@@ -83,7 +90,7 @@ export class InterviewOrchestrator {
       .eq('id', interviewId)
       .single();
 
-    // Evaluate answer
+    // Evaluate answer using appropriate agent
     let evaluation: AnswerEvaluation | HRAnswerEvaluation;
     if (questionPayload.agentType === 'hr') {
       const hrQuestion: HRQuestion = {
@@ -92,7 +99,49 @@ export class InterviewOrchestrator {
       };
       evaluation = await hrBehavioralAgent.evaluateAnswer(hrQuestion, answer);
     } else {
-      evaluation = await expertDomainAgent.evaluateAnswer(
+      // Get interview to check for selected agents
+      const { data: fullInterview } = await this.supabase
+        .from('interviews')
+        .select('selected_agents, jobs (*)')
+        .eq('id', interviewId)
+        .single();
+      
+      let agentDomain = questionPayload.domain;
+      
+      // Respect HR's agent selection if provided
+      const selectedAgents = fullInterview?.selected_agents as string[] | null;
+      const preferredAgents = fullInterview?.jobs?.preferred_agents as string[] | null;
+      
+      if (selectedAgents && selectedAgents.length > 0) {
+        const matchingAgent = selectedAgents.find((agentId) => {
+          if (agentId === 'backend' && (agentDomain === 'backend' || !agentDomain)) return true;
+          if (agentId === 'ml' && (agentDomain === 'ml' || agentDomain === 'machine-learning')) return true;
+          if (agentId === 'frontend' && (agentDomain === 'frontend' || !agentDomain)) return true;
+          return false;
+        });
+        if (matchingAgent) {
+          agentDomain = matchingAgent === 'ml' ? 'ml' : matchingAgent;
+        }
+      } else if (preferredAgents && preferredAgents.length > 0) {
+        const matchingAgent = preferredAgents.find((agentId) => {
+          if (agentId === 'backend' && (agentDomain === 'backend' || !agentDomain)) return true;
+          if (agentId === 'ml' && (agentDomain === 'ml' || agentDomain === 'machine-learning')) return true;
+          if (agentId === 'frontend' && (agentDomain === 'frontend' || !agentDomain)) return true;
+          return false;
+        });
+        if (matchingAgent) {
+          agentDomain = matchingAgent === 'ml' ? 'ml' : matchingAgent;
+        }
+      }
+      
+      const expertAgent = ExpertAgentFactory.getExpertAgent(
+        agentDomain,
+        question.competency,
+        questionPayload.techStack
+      );
+      
+      // All expert agents have the same interface
+      evaluation = await (expertAgent as any).evaluateAnswer(
         question,
         answer,
         interview!.candidate_id
@@ -170,13 +219,58 @@ export class InterviewOrchestrator {
       throw new Error('Invalid decision from planner');
     }
 
-    // Generate question
+    // Generate question using appropriate agent
     let question: Question | HRQuestion;
     if (decision.agentType === 'hr') {
-      question = await hrBehavioralAgent.generateQuestion(decision.competency);
-    } else {
-      question = await expertDomainAgent.generateQuestion(
+      question = await hrBehavioralAgent.generateQuestion(
         decision.competency,
+        state.candidateAnalysis
+      );
+    } else {
+      // Get the appropriate expert agent based on domain
+      const normalized = interview.jobs?.normalized_json as any;
+      
+      // Check if HR selected specific agents for this interview
+      const selectedAgents = interview.selected_agents as string[] | null;
+      const preferredAgents = interview.jobs?.preferred_agents as string[] | null;
+      
+      // Determine which agent to use
+      let agentDomain = decision.domain || state.jobDomain;
+      
+      // If HR selected agents, try to match one of them
+      if (selectedAgents && selectedAgents.length > 0) {
+        // Use first matching agent from selection
+        const matchingAgent = selectedAgents.find((agentId) => {
+          if (agentId === 'backend' && (agentDomain === 'backend' || !agentDomain)) return true;
+          if (agentId === 'ml' && (agentDomain === 'ml' || agentDomain === 'machine-learning')) return true;
+          if (agentId === 'frontend' && (agentDomain === 'frontend' || !agentDomain)) return true;
+          return false;
+        });
+        if (matchingAgent) {
+          agentDomain = matchingAgent === 'ml' ? 'ml' : matchingAgent;
+        }
+      } else if (preferredAgents && preferredAgents.length > 0) {
+        // Fall back to job preferred agents
+        const matchingAgent = preferredAgents.find((agentId) => {
+          if (agentId === 'backend' && (agentDomain === 'backend' || !agentDomain)) return true;
+          if (agentId === 'ml' && (agentDomain === 'ml' || agentDomain === 'machine-learning')) return true;
+          if (agentId === 'frontend' && (agentDomain === 'frontend' || !agentDomain)) return true;
+          return false;
+        });
+        if (matchingAgent) {
+          agentDomain = matchingAgent === 'ml' ? 'ml' : matchingAgent;
+        }
+      }
+      
+      const expertAgent = ExpertAgentFactory.getExpertAgent(
+        agentDomain,
+        decision.competency,
+        normalized?.techStack
+      );
+      
+      // All expert agents have the same interface
+      question = await (expertAgent as any).generateQuestion(
+        decision.competency!,
         state.difficulty,
         interview.candidate_id,
         interview.jobs
@@ -187,7 +281,9 @@ export class InterviewOrchestrator {
     await this.recordEvent(interviewId, 'question', {
       ...question,
       agentType: decision.agentType,
+      domain: decision.domain,
       reasoning: decision.reasoning,
+      techStack: interview.jobs?.normalized_json?.techStack,
     });
 
     // Update state
@@ -208,8 +304,11 @@ export class InterviewOrchestrator {
     // Save evaluation to database
     await this.supabase.from('evaluations').upsert({
       interview_id: interviewId,
-      scores_json: evaluation.scores,
-      summary: evaluation.summary,
+      scores_json: {
+        ...evaluation.scores,
+        candidateSummary: evaluation.candidateSummary, // Store candidate-friendly summary in scores_json for now
+      },
+      summary: evaluation.summary, // Full HR summary
       recommendation: evaluation.recommendation,
     });
 

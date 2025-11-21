@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useInterview } from '@/hooks/use-interview';
-import { Play, Send } from 'lucide-react';
+import { Play, Send, Share2, Copy } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 
 export default function InterviewPage() {
@@ -18,6 +18,7 @@ export default function InterviewPage() {
   const [answer, setAnswer] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
   const [evaluation, setEvaluation] = useState<any>(null);
+  const [copied, setCopied] = useState(false);
 
   const loadEvaluation = useCallback(async () => {
     const evalData = await getEvaluation();
@@ -61,15 +62,47 @@ export default function InterviewPage() {
     }
   };
 
+  const handleShareInvitation = async () => {
+    const invitationUrl = `${window.location.origin}/interview/${interviewId}`;
+    try {
+      await navigator.clipboard.writeText(invitationUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-page p-6">
       <div className="max-w-4xl mx-auto">
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Interview Session</CardTitle>
-            <CardDescription>
-              Status: {isConnected ? 'Connected' : 'Disconnected'}
-            </CardDescription>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle>Interview Session</CardTitle>
+                <CardDescription>
+                  Status: {isConnected ? 'Connected' : 'Disconnected'}
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleShareInvitation}
+              >
+                {copied ? (
+                  <>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Share Invitation
+                  </>
+                )}
+              </Button>
+            </div>
           </CardHeader>
         </Card>
 

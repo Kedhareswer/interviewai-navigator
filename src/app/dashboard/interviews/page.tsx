@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Play, Eye } from 'lucide-react';
+import { Play, Eye, Share2, Copy } from 'lucide-react';
 
 interface Interview {
   id: string;
@@ -19,6 +19,7 @@ interface Interview {
 export default function InterviewsPage() {
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchInterviews();
@@ -46,6 +47,17 @@ export default function InterviewsPage() {
         return 'bg-yellow-500';
       default:
         return 'bg-gray-500';
+    }
+  };
+
+  const handleShareInvitation = async (interviewId: string) => {
+    const invitationUrl = `${window.location.origin}/interview/${interviewId}`;
+    try {
+      await navigator.clipboard.writeText(invitationUrl);
+      setCopiedId(interviewId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
     }
   };
 
@@ -85,20 +97,50 @@ export default function InterviewsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Link href={`/dashboard/interviews/${interview.id}`}>
                     <Button variant="outline">
                       <Eye className="mr-2 h-4 w-4" />
                       View
                     </Button>
                   </Link>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleShareInvitation(interview.id)}
+                  >
+                    {copiedId === interview.id ? (
+                      <>
+                        <Copy className="mr-2 h-4 w-4" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Share
+                      </>
+                    )}
+                  </Button>
                   {interview.status === 'scheduled' && (
-                    <Link href={`/dashboard/interviews/${interview.id}/start`}>
-                      <Button>
-                        <Play className="mr-2 h-4 w-4" />
-                        Start Interview
-                      </Button>
-                    </Link>
+                    <Button
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(`/api/interviews/${interview.id}/start`, {
+                            method: 'POST',
+                          });
+                          if (response.ok) {
+                            window.location.href = `/dashboard/interviews/${interview.id}`;
+                          } else {
+                            alert('Failed to start interview');
+                          }
+                        } catch (error) {
+                          console.error('Failed to start interview:', error);
+                          alert('Failed to start interview');
+                        }
+                      }}
+                    >
+                      <Play className="mr-2 h-4 w-4" />
+                      Start Interview
+                    </Button>
                   )}
                 </div>
               </CardContent>

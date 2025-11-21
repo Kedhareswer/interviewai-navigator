@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getSessionWithProfile } from '@/lib/auth/session';
 import { interviewOrchestrator } from '@/lib/agents/orchestrator';
 
 export async function POST(
@@ -8,6 +9,17 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
+    const { session, profile } = await getSessionWithProfile();
+
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized', data: null }, { status: 401 });
+    }
+
+    // Only HR can start interviews
+    if (profile?.role !== 'hr') {
+      return NextResponse.json({ error: 'Forbidden', data: null }, { status: 403 });
+    }
+
     const supabase = await createClient();
 
     // Update interview status
