@@ -21,10 +21,10 @@ export class JobIngestionService {
     }
 
     // Store raw JD in storage
-    await storageService.uploadFile(
+    await storageService.uploadBytes(
       'jobs',
       storageService.getJobPath(jobId),
-      Buffer.from(job.description_raw),
+      new TextEncoder().encode(job.description_raw),
       { contentType: 'text/markdown' }
     );
 

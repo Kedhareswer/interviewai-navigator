@@ -83,10 +83,10 @@ export class CandidateIngestionService {
       const chunks = resumeParser.chunkResume(text);
       
       // Store raw resume in storage
-      await storageService.uploadFile(
+      await storageService.uploadBytes(
         'candidates',
         storageService.getCandidateResumePath(candidateId),
-        Buffer.from(text),
+        new TextEncoder().encode(text),
         { contentType: 'text/plain' }
       );
 
@@ -124,10 +124,10 @@ export class CandidateIngestionService {
         chunks: chunks.map(c => ({ text: c.text, metadata: c.metadata })),
       };
       
-      await storageService.uploadFile(
+      await storageService.uploadBytes(
         'candidates',
         storageService.getCandidateLinkedInPath(candidateId),
-        Buffer.from(JSON.stringify(linkedInData, null, 2)),
+        new TextEncoder().encode(JSON.stringify(linkedInData, null, 2)),
         { contentType: 'application/json' }
       );
 
@@ -168,10 +168,10 @@ export class CandidateIngestionService {
           url: repo.url,
         };
         
-        await storageService.uploadFile(
+        await storageService.uploadBytes(
           'candidates',
           storageService.getCandidateGitHubPath(candidateId, repo.name),
-          Buffer.from(JSON.stringify(repoData, null, 2)),
+          new TextEncoder().encode(JSON.stringify(repoData, null, 2)),
           { contentType: 'application/json' }
         );
       }
@@ -199,10 +199,10 @@ export class CandidateIngestionService {
         const chunk = chunks[i];
         const pageName = chunk.metadata?.title || `page_${i + 1}`;
         
-        await storageService.uploadFile(
+        await storageService.uploadBytes(
           'candidates',
           storageService.getCandidatePortfolioPath(candidateId, pageName),
-          Buffer.from(chunk.text),
+          new TextEncoder().encode(chunk.text),
           { contentType: 'text/markdown' }
         );
       }

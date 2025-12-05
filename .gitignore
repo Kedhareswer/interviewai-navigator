@@ -17,6 +17,7 @@ build
 
 .windsurf
 .windsurf/
+
 # Production
 *.local
 .env

@@ -1,13 +1,60 @@
 import { createAdminClient } from '../supabase/admin';
-import { plannerAgent, PlannerState } from './planner-agent';
-import { ExpertAgentFactory, Question, AnswerEvaluation } from './expert-agent-factory';
-import { hrBehavioralAgent, HRQuestion, HRAnswerEvaluation } from './hr-agent';
+import { plannerAgent } from './planner-agent';
+import { ExpertAgentFactory } from './expert-agent-factory';
+import { hrBehavioralAgent } from './hr-agent';
 import { evaluationAgent } from './evaluation-agent';
 import { storageService } from '../storage';
+import type { PlannerState, Question, AnswerEvaluation, HRQuestion, HRAnswerEvaluation } from '../types/database';
 
 export class InterviewOrchestrator {
   private supabase = createAdminClient();
-  private stateMap = new Map<string, PlannerState>();
+
+  /**
+   * Load interview state from database
+   */
+  private async loadState(interviewId: string): Promise<PlannerState | null> {
+    const { data, error } = await this.supabase
+      .from('interview_state')
+      .select('state')
+      .eq('interview_id', interviewId)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data.state as PlannerState;
+  }
+
+  /**
+   * Save interview state to database
+   */
+  private async saveState(interviewId: string, state: PlannerState): Promise<void> {
+    const { error } = await this.supabase
+      .from('interview_state')
+      .upsert({
+        interview_id: interviewId,
+        state: state as any,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'interview_id',
+      });
+
+    if (error) {
+      console.error('Failed to save interview state:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete interview state from database
+   */
+  private async deleteState(interviewId: string): Promise<void> {
+    await this.supabase
+      .from('interview_state')
+      .delete()
+      .eq('interview_id', interviewId);
+  }
 
   /**
    * Start an interview
@@ -34,7 +81,7 @@ export class InterviewOrchestrator {
       interview.candidate_id,
       interview.difficulty_override
     );
-    this.stateMap.set(interviewId, state);
+    await this.saveState(interviewId, state);
 
     // Record system event with candidate analysis
     await this.recordEvent(interviewId, 'system', {
@@ -56,7 +103,7 @@ export class InterviewOrchestrator {
    * Process a candidate answer
    */
   async processAnswer(interviewId: string, answer: string): Promise<void> {
-    const state = this.stateMap.get(interviewId);
+    const state = await this.loadState(interviewId);
     if (!state) {
       throw new Error(`Interview state not found: ${interviewId}`);
     }
@@ -162,7 +209,7 @@ export class InterviewOrchestrator {
       question.competency,
       evaluation.score
     );
-    this.stateMap.set(interviewId, updatedState);
+    await this.saveState(interviewId, updatedState);
 
     // Check if we should continue or complete
     const decision = await plannerAgent.decideNextAction(
@@ -183,7 +230,7 @@ export class InterviewOrchestrator {
    * Generate next question based on planner decision
    */
   private async generateNextQuestion(interviewId: string): Promise<void> {
-    const state = this.stateMap.get(interviewId);
+    const state = await this.loadState(interviewId);
     if (!state) {
       throw new Error(`Interview state not found: ${interviewId}`);
     }
@@ -293,7 +340,7 @@ export class InterviewOrchestrator {
       ...state,
       currentCompetency: decision.competency,
     };
-    this.stateMap.set(interviewId, updatedState);
+    await this.saveState(interviewId, updatedState);
   }
 
   /**
@@ -330,10 +377,10 @@ export class InterviewOrchestrator {
       .eq('interview_id', interviewId)
       .order('timestamp', { ascending: true });
 
-    await storageService.uploadFile(
+    await storageService.uploadBytes(
       'interviews',
       storageService.getInterviewTranscriptPath(interviewId),
-      Buffer.from(JSON.stringify(events, null, 2)),
+      new TextEncoder().encode(JSON.stringify(events, null, 2)),
       { contentType: 'application/json' }
     );
 
@@ -344,7 +391,7 @@ export class InterviewOrchestrator {
     });
 
     // Clean up state
-    this.stateMap.delete(interviewId);
+    await this.deleteState(interviewId);
   }
 
   /**

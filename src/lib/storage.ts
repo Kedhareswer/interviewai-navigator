@@ -14,7 +14,7 @@ export class StorageService {
   async uploadFile(
     bucket: StorageBucket,
     path: string,
-    file: File | Buffer,
+    file: File | Blob | ArrayBuffer | string,
     options?: { contentType?: string }
   ) {
     const { data, error } = await this.supabase.storage
@@ -26,6 +26,20 @@ export class StorageService {
 
     if (error) throw error;
     return data;
+  }
+
+  /**
+   * Upload from Uint8Array (converted to Blob)
+   */
+  async uploadBytes(
+    bucket: StorageBucket,
+    path: string,
+    bytes: Uint8Array,
+    options?: { contentType?: string }
+  ) {
+    // Use type assertion to handle TypeScript strict mode with Blob constructor
+    const blob = new Blob([bytes as BlobPart], { type: options?.contentType || 'application/octet-stream' });
+    return this.uploadFile(bucket, path, blob, options);
   }
 
   async getPublicUrl(bucket: StorageBucket, path: string) {

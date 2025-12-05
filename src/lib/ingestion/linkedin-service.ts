@@ -1,13 +1,38 @@
-// LinkedIn scraping - using basic approach
-// For production, consider using LinkedIn API or scraping service
+// LinkedIn integration service
+// Supports manual data input and structured parsing
+
+export interface LinkedInProfile {
+  name?: string;
+  headline?: string;
+  summary?: string;
+  experience?: Array<{
+    title: string;
+    company: string;
+    duration?: string;
+    description?: string;
+  }>;
+  education?: Array<{
+    school: string;
+    degree?: string;
+    field?: string;
+    duration?: string;
+  }>;
+  skills?: string[];
+  certifications?: Array<{
+    name: string;
+    issuer?: string;
+    date?: string;
+  }>;
+}
 
 export class LinkedInService {
   /**
-   * Extract LinkedIn profile data from URL
-   * Note: LinkedIn has strict anti-scraping measures. This is a basic implementation.
-   * For production, consider using LinkedIn API or a service like Apify.
+   * Extract LinkedIn profile data from URL or manual input
+   * Since LinkedIn has strict anti-scraping measures, this supports:
+   * 1. Manual JSON input from user
+   * 2. Placeholder for future API integration
    */
-  async extractProfileData(linkedInUrl: string): Promise<Array<{
+  async extractProfileData(linkedInUrl: string, manualData?: LinkedInProfile): Promise<Array<{
     text: string;
     source: string;
     url?: string;
@@ -20,34 +45,127 @@ export class LinkedInService {
       metadata?: Record<string, any>;
     }> = [];
 
-    try {
-      // LinkedIn requires authentication and has anti-bot measures
-      // This is a simplified approach - in production, you'd need:
-      // 1. LinkedIn API access (limited availability)
-      // 2. Or a scraping service like Apify
-      // 3. Or manual data entry
-
-      // For now, we'll return a placeholder structure
-      // In a real implementation, you would:
-      // - Use LinkedIn API if available
-      // - Or use a scraping service
-      // - Or prompt user to paste their profile data
-
-      chunks.push({
-        text: `LinkedIn Profile: ${linkedInUrl}\n\nNote: LinkedIn profile data extraction requires API access or manual input.`,
-        source: 'linkedin',
-        url: linkedInUrl,
-        metadata: {
-          url: linkedInUrl,
-          extracted: false,
-          note: 'Manual extraction required or API access needed',
-        },
-      });
-
-      return chunks;
-    } catch (error) {
-      throw new Error(`Failed to extract LinkedIn data: ${error}`);
+    // If manual data is provided, parse and return it
+    if (manualData) {
+      return this.parseLinkedInProfile(manualData, linkedInUrl);
     }
+
+    // Return a structured prompt for manual data entry
+    chunks.push({
+      text: `LinkedIn Profile URL: ${linkedInUrl}\n\nTo include LinkedIn data in the candidate's profile, please provide the profile information manually through the candidate edit page, or use a LinkedIn data export.`,
+      source: 'linkedin',
+      url: linkedInUrl,
+      metadata: {
+        url: linkedInUrl,
+        extracted: false,
+        requiresManualInput: true,
+        instructions: 'Navigate to LinkedIn profile, copy visible information, and paste into candidate profile notes.',
+      },
+    });
+
+    return chunks;
+  }
+
+  /**
+   * Parse a structured LinkedIn profile into chunks
+   */
+  private parseLinkedInProfile(profile: LinkedInProfile, url?: string): Array<{
+    text: string;
+    source: string;
+    url?: string;
+    metadata?: Record<string, any>;
+  }> {
+    const chunks: Array<{
+      text: string;
+      source: string;
+      url?: string;
+      metadata?: Record<string, any>;
+    }> = [];
+
+    // Header section
+    if (profile.name || profile.headline) {
+      let headerText = '';
+      if (profile.name) headerText += `Name: ${profile.name}\n`;
+      if (profile.headline) headerText += `Headline: ${profile.headline}\n`;
+      
+      chunks.push({
+        text: headerText.trim(),
+        source: 'linkedin',
+        url,
+        metadata: { section: 'header', extracted: true },
+      });
+    }
+
+    // Summary section
+    if (profile.summary) {
+      chunks.push({
+        text: `Professional Summary:\n${profile.summary}`,
+        source: 'linkedin',
+        url,
+        metadata: { section: 'summary', extracted: true },
+      });
+    }
+
+    // Experience section
+    if (profile.experience && profile.experience.length > 0) {
+      profile.experience.forEach((exp, index) => {
+        let expText = `Experience: ${exp.title} at ${exp.company}`;
+        if (exp.duration) expText += `\nDuration: ${exp.duration}`;
+        if (exp.description) expText += `\nDescription: ${exp.description}`;
+
+        chunks.push({
+          text: expText,
+          source: 'linkedin',
+          url,
+          metadata: { section: 'experience', index, extracted: true },
+        });
+      });
+    }
+
+    // Education section
+    if (profile.education && profile.education.length > 0) {
+      profile.education.forEach((edu, index) => {
+        let eduText = `Education: ${edu.school}`;
+        if (edu.degree) eduText += `\nDegree: ${edu.degree}`;
+        if (edu.field) eduText += `\nField: ${edu.field}`;
+        if (edu.duration) eduText += `\nDuration: ${edu.duration}`;
+
+        chunks.push({
+          text: eduText,
+          source: 'linkedin',
+          url,
+          metadata: { section: 'education', index, extracted: true },
+        });
+      });
+    }
+
+    // Skills section
+    if (profile.skills && profile.skills.length > 0) {
+      chunks.push({
+        text: `Skills: ${profile.skills.join(', ')}`,
+        source: 'linkedin',
+        url,
+        metadata: { section: 'skills', extracted: true },
+      });
+    }
+
+    // Certifications section
+    if (profile.certifications && profile.certifications.length > 0) {
+      profile.certifications.forEach((cert, index) => {
+        let certText = `Certification: ${cert.name}`;
+        if (cert.issuer) certText += `\nIssuer: ${cert.issuer}`;
+        if (cert.date) certText += `\nDate: ${cert.date}`;
+
+        chunks.push({
+          text: certText,
+          source: 'linkedin',
+          url,
+          metadata: { section: 'certification', index, extracted: true },
+        });
+      });
+    }
+
+    return chunks;
   }
 
   /**
