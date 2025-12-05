@@ -412,5 +412,3 @@ export interface CandidateWithEmbeddings extends Candidate {
 export type JobWithNormalized = Omit<Job, 'normalized_json'> & {
   normalized_json: NormalizedJob | null;
 };
-
-
